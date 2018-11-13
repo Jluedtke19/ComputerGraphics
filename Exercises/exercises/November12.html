@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <title>29 October 2018</title>
+    <script type="text/javascript" src="../libs/three.js"></script>
+    <script type="text/javascript" src="../libs/stats.js"></script>
+    <script type="text/javascript" src="../libs/dat.gui.js"></script>
+	<script type="text/javascript" src="../libs/OrbitControls.js"></script>
+	
+
+    <style>
+        body {
+            /* This style will make the image fill window. */
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Here is where the picture will appear. -->
+<div id="picture">
+</div>
+
+<!-- Here is our JavaScript code. -->
+<script type="text/javascript">
+    // After the page has been loaded, this function runs.
+    // The code that draws the picture by calling threejs functions
+    // goes here.
+	
+	var pz;
+	var test;
+	var WIDTH = window.innerWidth;
+			var HEIGHT = window.innerHeight;
+
+	
+    function init() {
+
+        // Create a scene that will contain geometry, lights, and camera.
+        // A "scene" is a scene graph---a tree with nodes.
+        var scene = new THREE.Scene();
+        var camera = new THREE.PerspectiveCamera(60, 
+             window.innerWidth / window.innerHeight, 0.1, 1000);
+			 
+		controls = new THREE.OrbitControls(camera);
+		
+		var p0 = new THREE.Vector3(2.0,2.0,0);
+		var p1 = new THREE.Vector3(4.0,4.0,0);
+		
+		var u = new THREE.Vector3( );
+		u.subVectors(p1,p0);
+		//console.log(u);
+		var matr = new THREE.Matrix3();
+		matr.set(0,-1,1,1,0,1,0,0,1);
+		var v = u.applyMatrix3(matr);
+		console.log(v);
+		
+		
+		
+		function f(p = new THREE.Vector3()){
+			return(v.dot(p.sub(p0)));
+		}
+		console.log(f(new THREE.Vector3(3,4,0)));
+		
+		var p2 = new THREE.Vector3(4.0, 2.0, 0);
+		
+		
+		
+		
+		function g(p = new THREE.Vector3()){
+			var top = f(p);
+			var bottom = f(p2);
+			return top/bottom;
+		}
+		
+		console.log(g(new THREE.Vector3(3,4,0)));
+		console.log(g(new THREE.Vector3(3,3,0)));
+		
+		function h(p0 = new THREE.Vector3(),p1 = new THREE.Vector3(),p2 = new THREE.Vector3()){
+			return function(p){
+				//var top = v.dot(p.sub(p0));
+				//var bot = v.dot(p.sub(p2));
+				var u = new THREE.Vector3();
+				u.subVectors(p1,p0);
+				u.applyMatrix3(matr);
+				p.sub(p0);
+				p2.sub(p0);
+				
+				var top = u.dot(p);
+				var bottom = u.dot(p2);
+				
+				return top/bottom;
+			}
+		}
+		
+		function alpha(p = new THREE.Vector3()){
+			var g = h(p0,p1,p2);
+			return g(p);
+		}
+		
+		function beta(p = new THREE.Vector3()){
+			var g = h(p1,p2,p0);
+			return g(p);
+		}
+		
+		function gama(p = new THREE.Vector3()){
+			var g = h(p2,p0,p1);
+			return g(p);
+		}
+		
+		
+		function barycentric(p = new THREE.Vector3()){
+			var a = alpha(p);
+			var b = beta(p);
+			var g = gama(p);
+			
+			return [a,b,g];
+		
+		}
+		
+		console.log(barycentric(new THREE.Vector3(3,2.5,0)));
+		
+		
+		
+
+        // Create a renderer. Set its size and the color used to paint
+        // the empty parts of the scene..
+        var renderer = new THREE.WebGLRenderer();
+
+        renderer.setClearColor(new THREE.Color(0xFFCC88, 1.0));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMapEnabled = true;
+		
+		var planeGeometry = new THREE.PlaneGeometry(44, 44);
+        var planeMaterial = new THREE.MeshLambertMaterial({color: 0xAAFFCC});
+		var mirrorMaterial = new THREE.MeshBasicMaterial( { color: 0x111111, envMap: camera.renderTarget } );
+        var plane = new THREE.Mesh(planeGeometry, planeMaterial);
+        plane.receiveShadow = true;
+
+	
+	function render() {
+    //render (update) the mirror
+    verticalMirror.render();
+    
+    renderer.render(scene, camera);
+}
+		
+        plane.position.x = 0;
+        plane.position.y = 0;
+        plane.position.z = -20;
+		
+        scene.add(plane);
+		
+		function animate() {
+			requestAnimationFrame( animate );
+			var random = Math.floor(Math.random() / 10);
+		
+
+			renderer.render( scene, camera );
+		}
+		
+
+
+        camera.position.x = 20;
+        camera.position.y = 20;
+        camera.position.z = 36;
+        camera.lookAt( new THREE.Vector3(0,0,0));
+		
+		controls.update();
+		
+		
+		function cameramovement() {
+
+			requestAnimationFrame( cameramovement );
+
+			// required if controls.enableDamping or controls.autoRotate are set to true
+			controls.update();
+
+			renderer.render( scene, camera );
+
+		}
+	
+        var spotLight = new THREE.SpotLight(0xFFFFFF);
+        spotLight.position.set( 8, 12, 20);
+        spotLight.castShadow = true;
+        // exponent determines how rapidly brightness diminishes
+        // with distance (smaller value => less attenuation)
+        spotLight.exponent = 1;
+        // angle determines how wide the cone of light is
+         spotLight.angle = Math.PI/4;
+        // aim the light by specifying an object
+        scene.add(spotLight);
+
+        // Add the output of the renderer to the HTML div element.
+        document.getElementById("picture").appendChild(renderer.domElement);
+		//document.getElementById("picture").style.margin = "0px 50px 0px 0px";
+		
+        renderer.render(scene, camera);
+		
+		cameramovement();
+		animate();
+		//render();
+		//animateshape(.05);
+    } // init()
+
+
+    // Call init() after the page has been loaded. 
+    // Init() will draw the picture.
+    window.onload = init;
+</script>
+</body>
+</html>

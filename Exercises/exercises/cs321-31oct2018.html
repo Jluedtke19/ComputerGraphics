@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <title>29 October 2018</title>
+    <script type="text/javascript" src="../libs/three.js"></script>
+    <script type="text/javascript" src="../libs/stats.js"></script>
+    <script type="text/javascript" src="../libs/dat.gui.js"></script>
+	<script type="text/javascript" src="../libs/OrbitControls.js"></script>
+	
+
+    <style>
+        body {
+            /* This style will make the image fill window. */
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Here is where the picture will appear. -->
+<div id="picture">
+</div>
+
+<!-- Here is our JavaScript code. -->
+<script type="text/javascript">
+    // After the page has been loaded, this function runs.
+    // The code that draws the picture by calling threejs functions
+    // goes here.
+	
+	var pz;
+	var test;
+	var WIDTH = window.innerWidth;
+			var HEIGHT = window.innerHeight;
+
+	
+    function init() {
+
+        // Create a scene that will contain geometry, lights, and camera.
+        // A "scene" is a scene graph---a tree with nodes.
+        var scene = new THREE.Scene();
+
+        // Create a camera.
+        //   1st parameter: field of view
+        //   2nd parameter: aspect ratio
+        //   3rd parameter: distance to nearest visible part of world
+        //   4th parameter: distance to most distant visible part of world
+        // Think of a pyramid whose apex is at the camera. 
+        // The camera will "see" objects that lie within a 
+        // portion of this pyramid. The shape of visible part of 
+        // the world is a truncated pyramid. The 3rd parameter
+        // ("near") determines how much of the top is removed from 
+        // the pyramid to define the visible part of the world.
+        //
+        // 0.1 is a recommended value for the "near" parameter 
+        // and should not be changed.
+        //
+        // 1000 is a good value for the "far" parameter and should 
+        // not be changed.
+        //
+         var camera = new THREE.PerspectiveCamera(60, 
+             window.innerWidth / window.innerHeight, 0.1, 1000);
+			 
+		controls = new THREE.OrbitControls(camera);
+
+        // Create a renderer. Set its size and the color used to paint
+        // the empty parts of the scene..
+        var renderer = new THREE.WebGLRenderer();
+
+        renderer.setClearColor(new THREE.Color(0xFFCC88, 1.0));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMapEnabled = true;
+		
+		var planeGeometry = new THREE.PlaneGeometry(44, 44);
+        var planeMaterial = new THREE.MeshLambertMaterial({color: 0xAAFFCC});
+		var mirrorMaterial = new THREE.MeshBasicMaterial( { color: 0x111111, envMap: camera.renderTarget } );
+        var plane = new THREE.Mesh(planeGeometry, planeMaterial);
+        plane.receiveShadow = true;
+		
+
+
+	
+	function render() {
+    //render (update) the mirror
+    verticalMirror.render();
+    
+    renderer.render(scene, camera);
+}
+		
+        plane.position.x = 0;
+        plane.position.y = 0;
+        plane.position.z = -20;
+		
+        scene.add(plane);
+
+        var geometry = patch(0).mesh(10);
+        var material = new THREE.MeshLambertMaterial( 
+            {color: 0xAAEEBB, wireframe: false} );
+        material.side = THREE.DoubleSide;
+        var mesh = new THREE.Mesh( geometry, material );
+		
+		var count = 0;
+		
+		function animateshape(move){
+			var total = 0;
+			while(true){
+				if(total > 50){
+					var geometry = patch(-move).mesh(10);
+					var mesh = new THREE.Mesh( geometry, material );
+					scene.add( mesh );
+					document.getElementById("picture").appendChild(renderer.domElement);		
+					renderer.render( scene, camera );
+					total += -move;
+				}
+				else if ( total < -50){
+					var geometry = patch(move).mesh(10);
+					var mesh = new THREE.Mesh( geometry, material );
+					scene.add( mesh );
+					document.getElementById("picture").appendChild(renderer.domElement);		
+					renderer.render( scene, camera );
+					total += move;
+				
+				}
+				else{
+					var geometry = patch(move).mesh(10);
+					var mesh = new THREE.Mesh( geometry, material );
+					scene.add( mesh );
+					document.getElementById("picture").appendChild(renderer.domElement);		
+					renderer.render( scene, camera );
+					total += move;
+				}			
+			}				
+		}
+		
+		var M = new THREE.Matrix4();
+		M.set(1,0,0,0,
+			  -3,3,0,0,
+			  3,-6,3,0,
+			  -1,3,-3,1);
+		
+		function animate() {
+			requestAnimationFrame( animate );
+			var random = Math.floor(Math.random() / 10);
+			//pz.setElement(2,1, random);
+			//pz.setElement(2,2, random);
+			//pz.setElement(3,1, random);
+			//pz.setElement(3,2, random);
+			
+			M.set(0,0,0,1,
+			  0,0,0,1,
+			  0,0,0,0,
+			  0,0,0,0);
+			
+			
+			//var geometry = patch(random).mesh(10);
+			//var mesh = new THREE.Mesh( geometry, material );
+			//scene.add( mesh );
+			mesh.rotation.x += 0.005;
+			mesh.rotation.y += 0.01;
+			//mesh.translateX(.05);
+			//mesh.updateMatrix();
+			//mesh.applyMatrix(M);
+			//document.getElementById("picture").appendChild(renderer.domElement);
+			renderer.render( scene, camera );
+		}
+
+        scene.add( mesh );
+
+        camera.position.x = 20;
+        camera.position.y = 20;
+        camera.position.z = 36;
+        camera.lookAt( new THREE.Vector3(0,0,0));
+		
+		controls.update();
+		
+		
+		function cameramovement() {
+
+			requestAnimationFrame( cameramovement );
+
+			// required if controls.enableDamping or controls.autoRotate are set to true
+			controls.update();
+
+			renderer.render( scene, camera );
+
+		}
+	
+        var spotLight = new THREE.SpotLight(0xFFFFFF);
+        spotLight.position.set( 8, 12, 20);
+        spotLight.castShadow = true;
+        // exponent determines how rapidly brightness diminishes
+        // with distance (smaller value => less attenuation)
+        spotLight.exponent = 1;
+        // angle determines how wide the cone of light is
+         spotLight.angle = Math.PI/4;
+        // aim the light by specifying an object
+        spotLight.target = mesh;
+        scene.add(spotLight);
+
+        // Add the output of the renderer to the HTML div element.
+        document.getElementById("picture").appendChild(renderer.domElement);
+		//document.getElementById("picture").style.margin = "0px 50px 0px 0px";
+		
+        renderer.render(scene, camera);
+		
+		cameramovement();
+		animate();
+		//render();
+		//animateshape(.05);
+    } // init()
+	
+
+    function patch(change) {
+        var result = {};
+		
+		test = 69;
+
+        var px = matrix([ 
+          [-12, -4, 4, 12],
+          [-12, -4, 4, 12],
+          [-12, -4, 4, 12],
+          [-12, -4, 4, 12]]);
+
+        var py = matrix([
+           [12,  12,  12,  12],
+           [4, 4, 4, 4],
+           [-4, -4, -4, -4],
+           [-12, -12, -12, -12]]);
+
+        pz = matrix([
+          [0,  0,  0, 0], 
+          [0, 16, 16, 0],
+          [0, 16, 16, 0],
+          [0, 0, 0, 0]]);
+
+        var m = matrix([
+          [1, 0, 0, 0],
+          [-3, 3, 0, 0],
+          [3, -6, 3, 0],
+          [-1, 3, -3, 1]]);
+
+        var mTranspose = matrix([
+          [1, -3, 3, -1],
+          [0, 3, -6, 3],
+          [0, 0, 3, -3],
+          [0, 0, 0, 1]]);
+
+        var xOperator = m.multiply( px ).multiply( mTranspose );
+        var yOperator = m.multiply( py ).multiply( mTranspose );
+        var zOperator = m.multiply( pz ).multiply( mTranspose );
+
+        var point = function(u, v) {
+            var uRowVector = matrix([[1, u, u*u, u*u*u]]);
+
+            var vColumnVector = matrix([[1], [v], [v*v], [v*v*v]]);
+
+            var x =  uRowVector.multiply( xOperator )
+                .multiply( vColumnVector ).getElement(0,0);
+            var y =  uRowVector.multiply( yOperator )
+                .multiply( vColumnVector ).getElement(0,0);
+            var z =  uRowVector.multiply( zOperator )
+                .multiply( vColumnVector ).getElement(0,0);
+
+            return new THREE.Vector3( x, y, z );
+        }; // point( u, v )
+
+        result.mesh = function( n ) {
+            var geometry = new THREE.Geometry();
+
+            for( var i = 0; i <= n; i++ ) {
+                var u = i / n;
+                for( var j = 0; j <= n; j++ ) {
+                    var v = j / n;
+
+                    var vertex = point( u, v );
+
+                    geometry.vertices.push( vertex );
+                } // for
+            } // for
+
+            //console.log( "Number of vertices = " + 
+                //geometry.vertices.length );
+
+            for( i = 0; i < geometry.vertices.length; i++ ) {
+                vertex = geometry.vertices[i];
+                //console.log( "Vertex #" + i + ": (" + vertex.x + ", "
+                //    + vertex.y + ", " + vertex.z + ")\n" ); 
+            } // for
+
+            var f = function(i,j) { return i * (n + 1) + j };
+
+            for( i = 0; i < n; i++ ) {
+                for( j = 0; j < n; j++ ) {
+                    geometry.faces.push( new THREE.Face3( 
+                        f(i,j),
+                        f(i, j + 1),
+                        f(i + 1, j + 1) ));
+
+                    geometry.faces.push( new THREE.Face3(
+                        f(i,j),
+                        f(i + 1, j + 1),
+                        f(i + 1, j) ));
+                } // for
+            } // for
+
+            //console.log( "\nNumber of faces = " + 
+            //    geometry.faces.length + "\n" );
+
+            for( i = 0; i < geometry.faces.length; i++ ) {
+                var face = geometry.faces[i];
+                //console.log( "Face #" + i + " contains vertices " 
+                //    + face.a + ", " 
+                //    + face.b + ", and " 
+                //    + face.c + "\n" );
+            } // for
+
+            //console.log( "\n" );
+            for( i = 0; i < geometry.faces.length; i++ ) {
+                face = geometry.faces[i];
+
+                // get coordinates of face's first vertex
+                var ax = geometry.vertices[face.a].x;
+                var ay = geometry.vertices[face.a].y;
+                var az = geometry.vertices[face.a].z;
+
+                // get coordinates of face's second vertex
+                var bx = geometry.vertices[face.b].x;
+                var by = geometry.vertices[face.b].y;
+                var bz = geometry.vertices[face.b].z;
+
+                // get coordinates of face's third vertex
+                var cx = geometry.vertices[face.c].x;
+                var cy = geometry.vertices[face.c].y;
+                var cz = geometry.vertices[face.c].z;
+
+                //console.log( "Vertices of face #" + i + ":\n" );
+                //console.log( "\t(" + ax + ", " + ay + ", " + az + ")\n" );
+                //console.log( "\t(" + bx + ", " + by + ", " + bz + ")\n" );
+                //console.log( "\t(" + cx + ", " + cy + ", " + cz + ")\n" );
+            } // for
+
+            geometry.computeBoundingBox();
+            geometry.computeBoundingSphere();
+            geometry.computeFaceNormals();
+            geometry.computeVertexNormals();
+
+            return geometry;
+        }; // mesh( n )
+
+        return result;
+    } // patch()
+
+    var matrix = function( elements ) {
+        var m = elements;
+
+        var result = {};
+		
+		result.setElement = function(row, col, num){
+			m[row][col] = num;
+		}
+
+        result.getNumberOfRows = function() {
+            if( elements === null ) {
+                return 0;
+            } // if
+            else {
+                return m.length;
+            } // else
+        }; // getNumberOfRows()
+
+        result.getNumberOfColumns = function() {
+            if( elements === null ) {
+                return 0;
+            } // if
+            else if( elements.length > 0 ) {
+                return m[0].length;
+            } // if
+            else {
+                return 0;
+            } // else
+        }; // getNumberOfColumns()
+
+        result.getElement = function(row, column) {
+            if( 0 <= row && row <= result.getNumberOfRows() &&
+                    0 <= column && column <= result.getNumberOfColumns() ) {
+                return m[row][column];
+            } // if
+            else {
+                return null;
+            } // else
+        }; // getElement( row, column )
+
+        result.multiply = function( otherMatrix ) {
+            if( result.getNumberOfColumns() 
+                    === otherMatrix.getNumberOfRows() ) {
+
+                var product = [];
+
+                for( var i = 0; i < result.getNumberOfRows(); i++ ) {
+                    var newRowInProduct = [];
+                    for( var j = 0; j < otherMatrix.getNumberOfColumns(); 
+                            j++ ) {
+
+                        var sum = 0.0;
+
+                        for( var k = 0; k < result.getNumberOfColumns(); 
+                            k++ ) {
+
+                            sum += result.getElement(i,k) 
+                                * otherMatrix.getElement(k,j);
+                        } // for
+                        newRowInProduct.push( sum );
+                    } // for
+                    product.push( newRowInProduct );
+                } // for
+
+                return matrix( product );
+            } // if
+            else {
+                return null;
+            } // else
+        }; // multiply( otherMatrix )
+
+        return result;
+    } // matrix()
+
+    // Call init() after the page has been loaded. 
+    // Init() will draw the picture.
+    window.onload = init;
+</script>
+</body>
+</html>

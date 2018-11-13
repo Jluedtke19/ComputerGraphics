@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <title>29 October 2018</title>
+    <script src="../libs/three.js"></script>
+	<script src="../libs/Reflector.js"></script>
+	<script src="../libs/OrbitControls.js"></script>
+	
+	
+	
+    <style>
+        body {
+            /* This style will make the image fill window. */
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Here is where the picture will appear. -->
+<div id="picture"></div>
+
+<!-- Here is our JavaScript code. -->
+<script type="text/javascript">
+
+	var NUMBER_OF_SPHERES = 2;
+	var SIZE = 3;
+    var RADIUS = 4;
+    var DISTANCE = 8;
+	
+	var NUMBER_OF_OCTAHEDRONS = 6;
+
+
+    function init() {
+	
+	// create an AudioListener and add it to the camera
+	
+
+        var scene = new THREE.Scene();
+
+        var camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+        var renderer = new THREE.WebGLRenderer();
+		
+		//var controls = new THREE.OrbitControls(camera);
+		
+        renderer.setClearColor(new THREE.Color(0xFFCC88, 1.0));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMapEnabled = true;
+
+        var planeGeometry = new THREE.PlaneGeometry(44, 44);
+        var planeMaterial = new THREE.MeshLambertMaterial({color: 0xAAFFCC});
+        var plane = new THREE.Mesh(planeGeometry, planeMaterial);
+        plane.receiveShadow = true;
+		
+
+        plane.position.x = 0;
+        plane.position.y = 0;
+        plane.position.z = -8;
+		
+        scene.add(plane);
+		
+		controls = new THREE.OrbitControls(camera);
+		function cameramovement() {
+
+			requestAnimationFrame( cameramovement );
+
+			// required if controls.enableDamping or controls.autoRotate are set to true
+			controls.update();
+
+			renderer.render( scene, camera );
+
+		}
+		
+		var sphereGeometry = new THREE.TetrahedronGeometry(SIZE, 0);
+        var sphereMaterials = [];
+        // TO-DO: Experiment with different colors. You might also
+        // try experimenting with different numbers of colors.
+        //   MeshPhongMaterial is shiny
+        //   MeshLambertMaterial is dull
+        sphereMaterials.push( new THREE.MeshPhongMaterial({color: 0xFFEE44}) );
+        sphereMaterials.push( new THREE.MeshLambertMaterial({color: 0xFF44EE}) );
+
+        var spheres = [];
+        for( var i = 0; i < NUMBER_OF_SPHERES; i++ ) {
+            spheres[i] = new THREE.Mesh(sphereGeometry, sphereMaterials[0]);
+        } // for
+
+        // Position the spheres.
+        for( i = 0; i < NUMBER_OF_SPHERES; i++ ) {
+            var angle = (i / NUMBER_OF_SPHERES) * (2 * Math.PI);
+			spheres[i].rotateX(angle);
+            spheres[i].position.x = DISTANCE * Math.cos( angle );
+            spheres[i].position.y = DISTANCE * Math.sin( angle );
+            spheres[i].position.z = RADIUS + (i % 2) * RADIUS;
+            spheres[i].castShadow = true;
+			
+        } // for
+
+        // Add each sphere to the scene.
+        for( i = 0; i < NUMBER_OF_SPHERES; i++ ) {
+            scene.add(spheres[i]);
+        } // for
+		
+		
+        camera.position.x = -15;
+        camera.position.y = 0;
+        camera.position.z = 36;
+		//controls.update();
+        camera.lookAt( new THREE.Vector3(0,0,0));
+			
+        var spotLight = new THREE.SpotLight(0xFFFFFF);
+        spotLight.position.set( 8, 12, 20);
+        spotLight.castShadow = true;
+
+        spotLight.exponent = 1;
+
+        spotLight.angle = Math.PI/4;
+
+        spotLight.target = plane;
+        scene.add(spotLight);
+
+        // Add the output of the renderer to the HTML div element.
+        document.getElementById("picture").appendChild(renderer.domElement);
+		cameramovement();
+
+        renderer.render(scene, camera);
+	} // init()
+	
+		
+    // Call init() after the page has been loaded. Init() will draw the picture.
+    window.onload = init;
+	
+</script>
+</body>
+</html>

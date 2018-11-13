@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+    <title>Interpolation</title>
+    <script type="text/javascript" src="../libs/three.js"></script>
+    <script type="text/javascript" src="../libs/stats.js"></script>
+    <script type="text/javascript" src="../libs/dat.gui.js"></script>
+    <style>
+        body {
+            /* This style will make the image fill window. */
+            margin: 0;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+
+<div id="picture">
+</div>
+
+<script type="text/javascript">
+
+    var format = function( x ) { return Math.trunc( x * 1000 )/1000; };
+    var vectorToString = function( v ) {
+        return "(" + format(v.x) + "," + format(v.y) + ")";
+    }; // vectorToString( v )
+
+    // Question 1.
+    console.log( "Question 1" );
+
+    var p0 = new THREE.Vector2( 2, 2 );
+    var p1 = new THREE.Vector2( 4, 4 );
+
+    console.log( vectorToString( p0 ) );
+    console.log( vectorToString( p1 ) );
+
+    // Question 2.
+    console.log( "Question 2" );
+
+    u = (p1.clone()).sub( p0 );
+
+    console.log( vectorToString( u ) );
+
+    // Question 3.
+    console.log( "Question 3" );
+
+    var rotator = (new THREE.Matrix4()).makeRotationZ( Math.PI/2 );
+    var perpendicularVector = 
+        (new THREE.Vector3( u.x, u.y, 0 )).applyMatrix4( rotator );
+    var v = 
+        (new THREE.Vector2( perpendicularVector.x, perpendicularVector.y ))
+        .normalize();
+
+    console.log( vectorToString( v ) );
+
+    // Question 4.
+    console.log( "Question 4" );
+
+    var f = function( p ) {
+        return v.dot( (p.clone()).sub( p0 ) );
+    }; // f( p )
+
+    var p = new THREE.Vector2( 3, 3 );
+    console.log( "when p = " + vectorToString(p) 
+        + " f(p) = " + format(f(p)) );
+
+    p = new THREE.Vector2( 3, 2 );
+    console.log( "when p = " + vectorToString(p) 
+        + " f(p) = " + format(f(p)) );
+
+    p = new THREE.Vector2( 3, 4 );
+    console.log( "when p = " + vectorToString(p) 
+        + " f(p) = " + format(f(p)) );
+
+    // Question 5.
+    console.log( "Question 5" );
+
+    var p2 = new THREE.Vector2( 4, 2 );
+
+    var g = function( p ) {
+        return f(p)/f(p2);
+    }; // g( p )
+
+    p = new THREE.Vector2( 5, 5 );
+    console.log( "when p = " + vectorToString(p) 
+        + " g(p) = " + format(g(p)) );
+
+    console.log( "when p = " + vectorToString(p2) 
+        + " g(p) = " + format(g(p2)) );
+
+    p = new THREE.Vector2( 5, 4 );
+    console.log( "when p = " + vectorToString(p) 
+        + " g(p) = " + format(g(p)) );
+
+    p = new THREE.Vector2( 5, 6 );
+    console.log( "when p = " + vectorToString(p) 
+        + " g(p) = " + format(g(p)) );
+
+    // Question 6.
+    console.log( "Question 6" );
+
+    var h = function( vertexA, vertexB, vertexC ) {
+        var u = (vertexB.clone()).sub( vertexA );
+
+        var rotator = (new THREE.Matrix4()).makeRotationZ( Math.PI/2 );
+        var perpendicularVector = 
+            (new THREE.Vector3( u.x, u.y, 0 )).applyMatrix4( rotator );
+        var v = 
+            (new THREE.Vector2( perpendicularVector.x, perpendicularVector.y ))
+            .normalize();
+
+        var distance = function( p ) { 
+            return v.dot( (p.clone()).sub( vertexA ) ); };
+
+        return function( p ) { return distance(p) / distance(vertexC); };
+    }; // h( vertexA, vertexB, vertexC )
+
+    var distanceFunction = h( p0, p1, p2 );
+
+    p = new THREE.Vector2( 5, 5 );
+    console.log( "when p = " + vectorToString(p) 
+        + " distanceFunction(p) = " + format(distanceFunction(p)) );
+
+    console.log( "when p = " + vectorToString(p2) 
+        + " distanceFunction(p) = " + format(distanceFunction(p2)) );
+
+    p = new THREE.Vector2( 5, 4 );
+    console.log( "when p = " + vectorToString(p) 
+        + " distanceFunction(p) = " + format(distanceFunction(p)) );
+
+    p = new THREE.Vector2( 5, 6 );
+    console.log( "when p = " + vectorToString(p) 
+        + " distanceFunction(p) = " + format(distanceFunction(p)) );
+
+    // Question 7.
+    console.log( "Question 7" );
+
+    var barycentric = function( vertexA, vertexB, vertexC ) {
+        var result = {};
+
+        result.alpha = h( vertexA, vertexB, vertexC );
+        result.beta = h( vertexB, vertexC, vertexA );
+        result.gamma = h( vertexC, vertexA, vertexB );
+
+        return result;
+    } // barycentric( vertexA, vertexB, vertexC )
+
+    var THRESHOLD = 0.1;
+
+    var CORNER_COLORS= [
+        new THREE.Color( 1.0, 0.0, 0.0 ),
+        new THREE.Color( 0.0, 1.0, 0.0 ),
+        new THREE.Color( 0.0, 0.0, 1.0 )];
+
+    var triangle = function( v0, v1, v2 ) {
+        let result = {};
+
+        // Compute the coordinates of the
+        // triangle's center.
+        let cx = (v0.x + v1.x + v2.x)/3;
+        let cy = (v0.y + v1.y + v2.y)/3;
+        result.centroid = new THREE.Vector2( cx, cy );
+
+        // Compute the coordinates of the
+        // midpoints of the triangle's 3 edges.
+
+        // midpoint of edge bounded by v0 and v1
+        let x = (v0.x + v1.x)/2;
+        let y = (v0.y + v1.y)/2;
+        let midpoint01 = new THREE.Vector2( x, y );
+
+        // midpoint of edge bounded by v1 and v2
+        x = (v1.x + v2.x)/2;
+        y = (v1.y + v2.y)/2;
+        let midpoint12 = new THREE.Vector2( x, y );
+
+        // midpoint of edge bounded by v2 and v0
+        x = (v2.x + v0.x)/2;
+        y = (v2.y + v0.y)/2;
+        let midpoint20 = new THREE.Vector2( x, y );
+
+        // Divide this triangle into 4 smaller triangles
+        result.top = function() { 
+            return triangle( midpoint12, v2, midpoint20 ); };
+
+        result.lowerLeft = function() { 
+            return triangle( midpoint01, midpoint20, v0 ); };
+
+        result.lowerRight = function() { 
+            return triangle( v1, midpoint12, midpoint01 ); };
+
+        result.center = function() { 
+            return triangle( midpoint01, midpoint12, midpoint20 ); };
+
+        let edge01length = ((v0.clone())
+            .sub(v1)).length();
+
+        let edge12length = ((v1.clone())
+            .sub(v2)).length();
+
+        let edge20length = ((v2.clone())
+            .sub(v0)).length();
+
+        result.size = Math.min( 
+            edge01length,
+            edge12length,
+            edge20length );
+
+        result.wireframe = function( color ) {
+            let triangleGeometry = new THREE.Geometry();
+            triangleGeometry.vertices.push( 
+                new THREE.Vector3( v0.x, v0.y, 0 ) );
+
+            triangleGeometry.vertices.push( 
+                new THREE.Vector3( v1.x, v1.y, 0 ) );
+
+            triangleGeometry.vertices.push( 
+                new THREE.Vector3( v2.x, v2.y, 0 ) );
+
+            triangleGeometry.faces.push( new THREE.Face3( 0, 1, 2 ) );
+
+            let triangleMaterial = 
+                new THREE.MeshBasicMaterial( {color: color.getHex()} );
+            triangleMaterial.wireframe = true;
+
+            return new THREE.Mesh( triangleGeometry, triangleMaterial );
+        }; // wireframe( color )
+
+        result.filled = function( color ) {
+            let triangleGeometry = new THREE.Geometry();
+
+            triangleGeometry.vertices.push( 
+                new THREE.Vector3( v0.x, v0.y, 0 ) );
+
+            triangleGeometry.vertices.push( 
+                new THREE.Vector3( v1.x, v1.y, 0 ) );
+
+            triangleGeometry.vertices.push( 
+                new THREE.Vector3( v2.x, v2.y, 0 ) );
+
+            triangleGeometry.faces.push( new THREE.Face3( 0, 1, 2 ) );
+
+            triangleGeometry.computeFaceNormals();
+            triangleGeometry.computeBoundingBox();
+            triangleGeometry.computeBoundingSphere();
+
+            let triangleMaterial = 
+                new THREE.MeshLambertMaterial( {color: color.getHex()} );
+            triangleMaterial.side = THREE.DoubleSide;
+
+            return new THREE.Mesh( triangleGeometry, triangleMaterial );
+        }; // filled( color )
+
+        return result;
+    }; // triangle( v0, v1, v2 )
+
+
+    var subdivide = function( someTriangle, listOfTriangles, weights ) {
+
+        if( someTriangle.size > THRESHOLD ) {
+            subdivide( someTriangle.top(), listOfTriangles, weights );
+            subdivide( someTriangle.lowerLeft(), listOfTriangles, weights );
+            subdivide( someTriangle.lowerRight(), listOfTriangles, weights );
+            subdivide( someTriangle.center(), listOfTriangles, weights );
+        } // if
+        else {
+            var p = someTriangle.centroid;
+            var alpha = weights.alpha(p);
+            var beta = weights.beta(p);
+            var gamma = weights.gamma(p);
+
+            var red = alpha * CORNER_COLORS[0].r 
+                + beta * CORNER_COLORS[1].r
+                + gamma * CORNER_COLORS[2].r;
+
+            var green = alpha * CORNER_COLORS[0].g 
+                + beta * CORNER_COLORS[1].g
+                + gamma * CORNER_COLORS[2].g;
+
+            var blue = alpha * CORNER_COLORS[0].b 
+                + beta * CORNER_COLORS[1].b
+                + gamma * CORNER_COLORS[2].b;
+
+            var color = new THREE.Color( red, green, blue );
+            listOfTriangles.push( someTriangle.filled( color ) );
+        } // else
+
+    }; // subdivide( someTriangle, listOfTriangles, weights )
+
+    function init() {
+
+        var scene = new THREE.Scene();
+
+//        var camera = new THREE.PerspectiveCamera(60, 
+//            window.innerWidth / window.innerHeight, 0.1, 1000);
+
+        var aspectRatio = window.innerWidth/window.innerHeight
+        var camera = new THREE.OrthographicCamera(
+            -aspectRatio * 1,  // left
+             aspectRatio * 1,  // right
+             1,  // top
+            -1,  // bottom
+             0.1,  // near
+             100); // far
+
+
+        var renderer = new THREE.WebGLRenderer();
+
+        renderer.setClearColor(new THREE.Color(0xFFCC88, 1.0));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMapEnabled = true;
+
+        // Specify coordinates of triangle's center.
+        let cx = 0;
+        let cy = 0;
+
+        // Specify orientation of triangle.
+        // (an angle between 0 and 2 pi radians)
+        let phase = 0;
+
+        let vertices = [];
+        for( let i = 0; i < 3; i++ ) {
+            let angle = i/3 * 2 * Math.PI;
+            let x = cx + Math.cos( angle + phase );
+            let y = cy + Math.sin( angle + phase );
+
+            vertices.push( new THREE.Vector2( x, y ) );
+        } // for
+
+        weights = barycentric( vertices[0], vertices[1], vertices[2] );
+
+        var point0 = new THREE.Vector2( 0.2, 0.3 );
+        console.log( "alpha = " + weights.alpha(point0) );
+        console.log( "beta = " + weights.beta(point0) );
+        console.log( "gamma = " + weights.gamma(point0) );
+
+        let t = triangle( vertices[0], vertices[1], vertices[2] );
+
+        let net = [];
+
+        subdivide( t, net, weights );
+
+        for( let i = 0; i < net.length; i++ ) {
+            scene.add( net[i] );
+        } // for
+
+
+        camera.position.x = 0;
+        camera.position.y = 0;
+        camera.position.z = 2;
+        camera.lookAt( new THREE.Vector3(0,0,0));
+
+
+        let spotLight = new THREE.SpotLight(0xFFFFFF);
+        spotLight.position.set( 0, 0, 20);
+        spotLight.castShadow = true;
+
+        spotLight.exponent = 1;
+
+        spotLight.angle = Math.PI/4;
+
+        //spotLight.target = plane;
+        scene.add(spotLight);
+
+        document.getElementById("picture")
+            .appendChild(renderer.domElement);
+
+        renderer.render(scene, camera);
+    } // init()
+
+    window.onload = init;
+</script>
+</body>
+</html>
